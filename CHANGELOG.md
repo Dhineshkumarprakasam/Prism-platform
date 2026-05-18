@@ -6,6 +6,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [2.1.1] — 2026-05-18
+
+### Added
+- **Webhook callback support** — pass an optional `webhook_url` in
+  `POST /api/scan`; a `POST` is delivered to that URL when the scan
+  reaches a terminal state. Signed with `X-Prism-Secret` when
+  `WEBHOOK_SECRET` is set. Private/loopback hosts are rejected.
+  Docs: `docs/ARCHITECTURE.md` (issue #18).
+- **OPSEC category tooltips** — hover over a category in the score bar
+  to see a one-line explanation of what it measures (issue #17).
+- **Alt+T keyboard shortcut** to toggle dark/light theme. Topbar
+  tooltip updated with the hint (issue #15).
+- **German (DE) locale** — full UI translation; language switcher now
+  cycles EN → RU → DE and auto-detects from `navigator.language`
+  (issue #12).
+- AI summary copy button refactored to share the global
+  `copyValue` + toast mechanism (PR #19 follow-up).
+
+### Changed
+- **PDF export** switched from WeasyPrint (52.5, broken on Windows
+  without GTK) to **xhtml2pdf** (pure-Python). A dedicated
+  PDF-friendly template is used so output is stable across OSes.
+
+### Fixed
+- PDF export endpoint no longer returns `501` / install errors on
+  Windows. Generated PDFs render OPSEC score, findings, WHOIS, DNS,
+  GeoIP, subdomains, threat intel and phone data correctly.
+
+---
+
 ## [2.1.0] — 2026-04-26
 
 ### Added

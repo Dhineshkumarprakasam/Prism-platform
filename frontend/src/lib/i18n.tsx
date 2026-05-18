@@ -2,11 +2,13 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import en from '@/messages/en.json';
 import ru from '@/messages/ru.json';
+import de from '@/messages/de.json';
 
-export type Locale = 'en' | 'ru';
+export type Locale = 'en' | 'ru' | 'de';
 type Messages = typeof en;
 
-const MESSAGES: Record<Locale, Messages> = { en, ru: ru as Messages };
+const MESSAGES: Record<Locale, Messages> = { en, ru: ru as Messages, de: de as Messages };
+export const SUPPORTED_LOCALES: Locale[] = ['en', 'ru', 'de'];
 const STORAGE_KEY = 'prism_locale';
 
 interface I18nContextValue {
@@ -36,14 +38,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
-      if (stored === 'en' || stored === 'ru') {
+      if (stored && SUPPORTED_LOCALES.includes(stored)) {
         setLocaleState(stored);
         return;
       }
       // Fallback: detect from browser
-      if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('ru')) {
-        setLocaleState('ru');
-      }
+      const lang = (typeof navigator !== 'undefined' ? navigator.language?.toLowerCase() : '') || '';
+      if (lang.startsWith('ru')) setLocaleState('ru');
+      else if (lang.startsWith('de')) setLocaleState('de');
     } catch { /* ignore */ }
   }, []);
 

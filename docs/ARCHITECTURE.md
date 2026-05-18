@@ -88,6 +88,53 @@ Frontend                          Backend
    │ ────────────────────────────────►│
 ```
 
+### Webhook callback (optional)
+
+Clients that cannot keep a WebSocket open (CI pipelines, bots, scripts) can
+pass a `webhook_url` field in the `POST /api/scan` body. When the scan reaches
+a terminal state (`completed` or `error`), the backend sends a
+`POST <webhook_url>` with the full result JSON.
+
+```json
+POST /api/scan
+{
+  "target": "example.com",
+  "scan_type": "auto",
+  "webhook_url": "https://hooks.example.com/prism"
+}
+```
+
+Outgoing payload:
+
+```json
+{
+  "scan_id": "…",
+  "target": "example.com",
+  "scan_type": "domain",
+  "status": "completed",
+  "started_at": "…",
+  "completed_at": "…",
+  "error": null,
+  "results": { /* same shape as GET /api/scan/{id}.results, minus graph/report_path */ }
+}
+```
+
+Headers:
+
+- `Content-Type: application/json`
+- `X-Prism-Secret: <WEBHOOK_SECRET>` — only if `WEBHOOK_SECRET` is set in
+  `.env`. Use this on the receiver side to verify authenticity.
+
+Validation rules (rejected with HTTP 400 before the scan starts):
+
+- Scheme must be `http` or `https`
+- Hostname must resolve to a public IP (private/loopback/link-local blocked)
+- A `HEAD` probe (3 s timeout) is attempted; failure is non-fatal so endpoints
+  that don't accept `HEAD` still work.
+
+The webhook is delivered fire-and-forget from a daemon thread (10 s timeout).
+Delivery failures are silent — design your receiver to be idempotent.
+
 ---
 
 ## Adding a new module

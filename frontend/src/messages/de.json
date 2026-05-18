@@ -1,0 +1,68 @@
+{
+  "topbar": {
+    "tagline": "Open-Source-Aufklärung",
+    "scanning": "Scan läuft",
+    "complete": "Fertig",
+    "failed": "Fehlgeschlagen",
+    "toggleTheme": "Design wechseln",
+    "github": "GitHub"
+  },
+  "sidebar": {
+    "target": "Ziel",
+    "targetPlaceholder": "Domain, IP, E-Mail, Telefon…",
+    "scanType": "Scan-Typ",
+    "modules": "Module",
+    "runScan": "Scan starten",
+    "scanning": "Scanne…",
+    "recent": "Zuletzt",
+    "noRecent": "Keine kürzlichen Scans"
+  },
+  "idle": {
+    "headline": "OSINT-Aufklärung für Sicherheitsforscher",
+    "subheadline": "Scanne Domains, IPs, E-Mails, Telefonnummern und Benutzernamen. Erhalte Threat-Intel, Leak-Daten, OPSEC-Bewertung und Entitätsgraphen in Sekunden.",
+    "tools": "Schnellwerkzeuge",
+    "capabilities": "Was PRISM kann"
+  },
+  "progress": {
+    "modulesLabel": "Module",
+    "initializing": "Scan wird initialisiert…",
+    "running": "Läuft…",
+    "log": "Fortschrittsprotokoll"
+  },
+  "results": {
+    "htmlReport": "HTML-Bericht",
+    "pdfReport": "PDF-Bericht",
+    "tabs": {
+      "findings": "Befunde",
+      "whois": "WHOIS",
+      "dns": "DNS",
+      "subdomains": "Subdomains",
+      "accounts": "Konten",
+      "threats": "Bedrohungen",
+      "censys": "Censys",
+      "darkweb": "Darknet",
+      "wayback": "Wayback",
+      "email": "E-Mail",
+      "dorks": "Dorks",
+      "phone": "Telefon",
+      "telegram": "Telegram",
+      "map": "Karte",
+      "graph": "Graph",
+      "json": "JSON",
+      "ai": "KI"
+    }
+  },
+  "common": {
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "copyFailed": "Kopieren fehlgeschlagen",
+    "loading": "Lädt…",
+    "error": "Fehler"
+  },
+  "lang": {
+    "label": "Sprache",
+    "en": "EN",
+    "ru": "RU",
+    "de": "DE"
+  }
+}

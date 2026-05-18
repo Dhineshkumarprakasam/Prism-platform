@@ -35,7 +35,7 @@ from web.security import require_api_key, validate_target, check_upload_size, ge
 _disable_docs = os.getenv("DISABLE_DOCS", "").lower() in ("1", "true", "yes")
 app = FastAPI(
     title="OSINT Toolkit",
-    version="2.0",
+    version="2.1.1",
     docs_url=None if _disable_docs else "/docs",
     redoc_url=None if _disable_docs else "/redoc",
     openapi_url=None if _disable_docs else "/openapi.json",
@@ -160,6 +160,43 @@ class ScanRequest(BaseModel):
     target: str
     scan_type: str = "auto"
     modules: List[str] = []
+    webhook_url: Optional[str] = None
+
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "").strip()
+
+def _validate_webhook_url(url: str) -> str:
+    """Validate webhook URL: scheme, public host, reachable via HEAD."""
+    from urllib.parse import urlparse
+    import ipaddress
+    import socket
+    if not url or len(url) > 2048:
+        raise ValueError("webhook_url is empty or too long")
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("webhook_url must be http(s) with a hostname")
+    try:
+        ip = socket.gethostbyname(parsed.hostname)
+    except socket.gaierror:
+        raise ValueError("webhook_url hostname cannot be resolved")
+    addr = ipaddress.ip_address(ip)
+    if addr.is_private or addr.is_loopback or addr.is_reserved or addr.is_link_local:
+        raise ValueError("webhook_url points to a private/internal address")
+    try:
+        _requests.head(url, timeout=3, allow_redirects=True)
+    except Exception:
+        # Some endpoints don't accept HEAD; that's not fatal — proceed.
+        pass
+    return url
+
+def _send_webhook(url: str, payload: Dict[str, Any]) -> None:
+    """Fire-and-forget webhook POST. Runs in a background thread."""
+    headers = {"Content-Type": "application/json", "User-Agent": "PRISM-Webhook/2.1.1"}
+    if WEBHOOK_SECRET:
+        headers["X-Prism-Secret"] = WEBHOOK_SECRET
+    try:
+        _requests.post(url, json=payload, headers=headers, timeout=10)
+    except Exception:
+        pass
 
 def _detect_type(target: str) -> str:
     if "@" in target:
@@ -212,7 +249,7 @@ async def _run_module(scan_id: str, name: str, coro_or_func, *args, **kwargs) ->
         await _push(scan_id, {"type": "module_done", "module": name, "status": "error", "error": str(exc)})
         return {"error": str(exc)}
 
-async def _execute_scan(scan_id: str, target: str, scan_type: str, modules: list) -> None:
+async def _execute_scan(scan_id: str, target: str, scan_type: str, modules: list, webhook_url: Optional[str] = None) -> None:
     results: Dict[str, Any] = {}
     all_modules = not modules
 
@@ -382,6 +419,22 @@ async def _execute_scan(scan_id: str, target: str, scan_type: str, modules: list
         await _push(scan_id, {"type": "scan_error", "error": safe_err})
     finally:
         await _push(scan_id, {"type": "_done"})
+        if webhook_url:
+            scan_snapshot = _scans.get(scan_id, {})
+            payload = {
+                "scan_id": scan_id,
+                "target": target,
+                "scan_type": scan_type,
+                "status": scan_snapshot.get("status"),
+                "started_at": scan_snapshot.get("started_at"),
+                "completed_at": scan_snapshot.get("completed_at"),
+                "error": scan_snapshot.get("error"),
+                "results": {
+                    k: v for k, v in (scan_snapshot.get("results") or {}).items()
+                    if k not in ("graph", "report_path")
+                },
+            }
+            threading.Thread(target=_send_webhook, args=(webhook_url, payload), daemon=True).start()
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
@@ -393,6 +446,13 @@ async def index():
 @limiter.limit("10/minute")
 async def start_scan(request: Request, req: ScanRequest):
     target = validate_target(req.target)
+
+    webhook_url = None
+    if req.webhook_url:
+        try:
+            webhook_url = _validate_webhook_url(req.webhook_url.strip())
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, status_code=400)
 
     scan_type = req.scan_type if req.scan_type != "auto" else _detect_type(target)
     scan_id = str(uuid.uuid4())
@@ -414,7 +474,7 @@ async def start_scan(request: Request, req: ScanRequest):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            loop.run_until_complete(_execute_scan(scan_id, target, scan_type, req.modules))
+            loop.run_until_complete(_execute_scan(scan_id, target, scan_type, req.modules, webhook_url))
         finally:
             loop.close()
 

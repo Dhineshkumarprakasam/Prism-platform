@@ -9,7 +9,7 @@
   },
   "sidebar": {
     "target": "Цель",
-    "targetPlaceholder": "домен, IP, email, телефон…",
+    "targetPlaceholder": "домен, IP, почта, телефон…",
     "scanType": "Тип скана",
     "modules": "Модули",
     "runScan": "Запустить",
@@ -18,8 +18,8 @@
     "noRecent": "Нет недавних сканов"
   },
   "idle": {
-    "headline": "OSINT-разведка для исследователей безопасности",
-    "subheadline": "Сканируй домены, IP, email, телефоны и юзернеймы. Получай threat intel, утечки, OPSEC-оценку и графы связей за секунды.",
+    "headline": "OSINT-разведка для сбора информации",
+    "subheadline": "Сканируй домены, IP, почта, телефоны и юзернеймы. Получай threat intel, утечки, OPSEC-оценку и графы связей за секунды.",
     "tools": "Быстрые инструменты",
     "capabilities": "Что умеет PRISM"
   },
@@ -62,6 +62,7 @@
   "lang": {
     "label": "Язык",
     "en": "EN",
-    "ru": "RU"
+    "ru": "RU",
+    "de": "DE"
   }
 }

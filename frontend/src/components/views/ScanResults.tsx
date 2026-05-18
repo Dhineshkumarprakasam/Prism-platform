@@ -151,6 +151,25 @@ function FindingRow({ f }: { f: OpsecFinding }) {
   );
 }
 
+const OPSEC_CATEGORY_INFO: Record<string, { label: string; tooltip: string }> = {
+  data_exposure: {
+    label: 'Data Exposure',
+    tooltip: 'Sensitive data leaks: breached credentials, exposed emails, public PII.',
+  },
+  identity_opsec: {
+    label: 'Identity OPSEC',
+    tooltip: 'Re-use of identifiers across platforms: same username/email across many sites.',
+  },
+  infrastructure: {
+    label: 'Infrastructure',
+    tooltip: 'Exposed services, open ports, weak DNS/WHOIS hygiene, threat-intel hits.',
+  },
+  web_security: {
+    label: 'Web Security',
+    tooltip: 'TLS, security headers, certificate transparency, archived sensitive paths.',
+  },
+};
+
 const TABS = [
   { id: 'findings', label: 'Findings', icon: Shield },
   { id: 'whois', label: 'WHOIS', icon: Globe },
@@ -292,15 +311,23 @@ export function ScanResults({ scan }: Props) {
               </div>
             </div>
           </div>
-          {Object.entries(opsec.categories).map(([k, cat]) => (
-            <div key={k} className="flex items-center gap-2">
-              <div className="text-[10px] text-text-3 capitalize">{k.replace('_', ' ')}</div>
-              <div className="w-20 h-1.5 rounded-full bg-surface-3 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${cat.percent}%`, background: cat.percent > 60 ? '#3fb950' : cat.percent > 30 ? '#d29922' : '#f85149' }} />
+          {Object.entries(opsec.categories).map(([k, cat]) => {
+            const info = OPSEC_CATEGORY_INFO[k];
+            const label = info?.label ?? k.replace(/_/g, ' ');
+            const tooltip = info?.tooltip ?? '';
+            return (
+              <div key={k} className="flex items-center gap-2" title={tooltip}>
+                <div className="text-[10px] text-text-3 capitalize flex items-center gap-1 cursor-help">
+                  {label}
+                  {tooltip && <span aria-hidden className="opacity-60">ⓘ</span>}
+                </div>
+                <div className="w-20 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${cat.percent}%`, background: cat.percent > 60 ? '#3fb950' : cat.percent > 30 ? '#d29922' : '#f85149' }} />
+                </div>
+                <div className="text-[10px] font-mono text-text-2">{cat.score}/{cat.max}</div>
               </div>
-              <div className="text-[10px] font-mono text-text-2">{cat.score}/{cat.max}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

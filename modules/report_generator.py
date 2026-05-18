@@ -547,6 +547,211 @@ def generate_html_report(
     return output_path
 
 
+PDF_REPORT_TEMPLATE = r"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>PRISM Report — {{ target }}</title>
+<style>
+  @page { size: A4; margin: 1.6cm 1.4cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1a1f2b; }
+  h1 { font-size: 18pt; margin: 0 0 4pt 0; color: #4f8ef7; }
+  h2 { font-size: 12pt; margin: 14pt 0 6pt 0; color: #1a1f2b;
+       border-bottom: 1pt solid #d0d7de; padding-bottom: 3pt; }
+  h3 { font-size: 11pt; margin: 10pt 0 4pt 0; color: #4f5563; }
+  .muted { color: #6e7681; font-size: 9pt; }
+  .target { font-family: Courier, monospace; font-size: 11pt; color: #1a1f2b; }
+
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt 0; }
+  td, th { padding: 4pt 6pt; vertical-align: top; font-size: 9.5pt;
+           border-bottom: 0.5pt solid #e1e6ec; }
+  th { background: #f4f6f9; text-align: left; font-weight: bold; color: #4f5563; }
+  td.label { color: #6e7681; width: 32%; }
+  td.value { color: #1a1f2b; font-family: Courier, monospace; font-size: 9pt; word-break: break-all; }
+
+  .score-box { background: #f4f6f9; border: 1pt solid #d0d7de; border-radius: 4pt;
+               padding: 10pt 12pt; margin-bottom: 10pt; }
+  .score-num { font-size: 26pt; font-weight: bold; color: {{ opsec_circle_color }}; }
+  .score-risk { font-size: 10pt; font-weight: bold; color: {{ opsec_circle_color }}; }
+
+  .badge { display: inline-block; padding: 1pt 5pt; border-radius: 3pt;
+           font-size: 8pt; font-weight: bold; color: #fff; }
+  .badge-high { background: #f85149; }
+  .badge-med  { background: #d29922; }
+  .badge-low  { background: #3fb950; }
+  .badge-info { background: #4f8ef7; }
+
+  .finding { padding: 4pt 0; border-bottom: 0.5pt solid #e1e6ec; }
+  .finding-msg { color: #1a1f2b; font-size: 10pt; }
+  .finding-meta { color: #6e7681; font-size: 8.5pt; margin-top: 1pt; }
+
+  .footer { margin-top: 18pt; padding-top: 8pt; border-top: 0.5pt solid #d0d7de;
+            color: #8b95a3; font-size: 8.5pt; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>PRISM OSINT Report</h1>
+<div class="muted">Target: <span class="target">{{ target }}</span>
+  &nbsp;·&nbsp; Type: {{ scan_type }}
+  &nbsp;·&nbsp; Generated: {{ generated_at }}</div>
+
+{% if opsec %}
+<div class="score-box">
+  <table><tr>
+    <td style="width: 90pt; vertical-align: middle;">
+      <div class="score-num">{{ opsec.score }}</div>
+      <div class="score-risk">{{ opsec.risk_level }} RISK</div>
+      <div class="muted">OPSEC Score</div>
+    </td>
+    <td style="vertical-align: middle;">
+      <table>
+        {% for key, cat in opsec.categories.items() %}
+        <tr>
+          <td class="label" style="width: 35%;">{{ cat_labels.get(key, key) }}</td>
+          <td style="width: 50%;">
+            <div style="background: #d0d7de; height: 5pt; border-radius: 2pt;">
+              <div style="background: {{ bar_color(cat.percent) }}; height: 5pt; width: {{ cat.percent }}%; border-radius: 2pt;"></div>
+            </div>
+          </td>
+          <td class="value" style="text-align: right;">{{ cat.score }}/{{ cat.max }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </td>
+  </tr></table>
+</div>
+
+{% if opsec.all_findings %}
+<h2>Security Findings ({{ opsec.all_findings|length }})</h2>
+{% for f in opsec.all_findings %}
+<div class="finding">
+  <span class="badge {% if f.severity == 'HIGH' %}badge-high{% elif f.severity == 'MEDIUM' %}badge-med{% else %}badge-low{% endif %}">{{ f.severity }}</span>
+  <span class="finding-msg">{{ f.message }}</span>
+  <div class="finding-meta">−{{ f.deduction }} pts · {{ f.category }}</div>
+</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% set whois = results.get('whois') %}
+{% if whois and not whois.get('error') %}
+<h2>WHOIS</h2>
+<table>
+  {% if whois.registrar %}<tr><td class="label">Registrar</td><td class="value">{{ whois.registrar }}</td></tr>{% endif %}
+  {% if whois.org %}<tr><td class="label">Organization</td><td class="value">{{ whois.org }}</td></tr>{% endif %}
+  {% if whois.creation_date %}<tr><td class="label">Created</td><td class="value">{{ whois.creation_date }}</td></tr>{% endif %}
+  {% if whois.expiration_date %}<tr><td class="label">Expires</td><td class="value">{{ whois.expiration_date }}</td></tr>{% endif %}
+  {% if whois.country %}<tr><td class="label">Country</td><td class="value">{{ whois.country }}</td></tr>{% endif %}
+  {% if whois.name_servers %}<tr><td class="label">Name servers</td><td class="value">{{ whois.name_servers|join(', ') }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+{% set dns = results.get('dns') %}
+{% if dns and dns.get('records') %}
+<h2>DNS</h2>
+<table>
+  {% for rtype, vals in dns.records.items() %}
+  <tr><td class="label">{{ rtype }}</td><td class="value">{{ vals|join(', ') if vals is iterable and vals is not string else vals }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% set geoip = results.get('geoip') %}
+{% if geoip and not geoip.get('error') %}
+<h2>GeoIP</h2>
+<table>
+  {% if geoip.ip %}<tr><td class="label">IP</td><td class="value">{{ geoip.ip }}</td></tr>{% endif %}
+  {% if geoip.city %}<tr><td class="label">City</td><td class="value">{{ geoip.city }}</td></tr>{% endif %}
+  {% if geoip.country_name or geoip.country %}<tr><td class="label">Country</td><td class="value">{{ geoip.country_name or geoip.country }}</td></tr>{% endif %}
+  {% if geoip.org %}<tr><td class="label">Organization</td><td class="value">{{ geoip.org }}</td></tr>{% endif %}
+  {% if geoip.loc %}<tr><td class="label">Coordinates</td><td class="value">{{ geoip.loc }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+{% set ct = results.get('cert_transparency') %}
+{% if ct and ct.subdomains %}
+<h2>Subdomains ({{ ct.subdomains|length }})</h2>
+<table>
+  {% for sub in ct.subdomains[:80] %}
+  <tr><td class="value">{{ sub }}</td></tr>
+  {% endfor %}
+</table>
+{% if ct.subdomains|length > 80 %}<div class="muted">… and {{ ct.subdomains|length - 80 }} more</div>{% endif %}
+{% endif %}
+
+{% set bb = results.get('blackbird') %}
+{% if bb %}
+{% set found = bb|selectattr('status', 'equalto', 'found')|list %}
+{% if found %}
+<h2>Accounts found ({{ found|length }})</h2>
+<table><tr><th>Site</th><th>URL</th></tr>
+{% for r in found %}<tr><td>{{ r.site }}</td><td class="value">{{ r.url }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endif %}
+
+{% set vt = results.get('virustotal') %}
+{% if vt and not vt.get('error') %}
+<h2>VirusTotal</h2>
+<table>
+  {% if vt.malicious is defined %}<tr><td class="label">Malicious</td><td class="value">{{ vt.malicious }}</td></tr>{% endif %}
+  {% if vt.suspicious is defined %}<tr><td class="label">Suspicious</td><td class="value">{{ vt.suspicious }}</td></tr>{% endif %}
+  {% if vt.harmless is defined %}<tr><td class="label">Harmless</td><td class="value">{{ vt.harmless }}</td></tr>{% endif %}
+  {% if vt.reputation is defined %}<tr><td class="label">Reputation</td><td class="value">{{ vt.reputation }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+{% set abuse = results.get('abuseipdb') %}
+{% if abuse and not abuse.get('error') %}
+<h2>AbuseIPDB</h2>
+<table>
+  {% if abuse.abuseConfidenceScore is defined %}<tr><td class="label">Confidence score</td><td class="value">{{ abuse.abuseConfidenceScore }}</td></tr>{% endif %}
+  {% if abuse.totalReports is defined %}<tr><td class="label">Total reports</td><td class="value">{{ abuse.totalReports }}</td></tr>{% endif %}
+  {% if abuse.countryCode %}<tr><td class="label">Country</td><td class="value">{{ abuse.countryCode }}</td></tr>{% endif %}
+  {% if abuse.isp %}<tr><td class="label">ISP</td><td class="value">{{ abuse.isp }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+{% set shodan = results.get('shodan') %}
+{% if shodan and not shodan.get('error') %}
+<h2>Shodan</h2>
+<table>
+  {% if shodan.ip_str %}<tr><td class="label">IP</td><td class="value">{{ shodan.ip_str }}</td></tr>{% endif %}
+  {% if shodan.org %}<tr><td class="label">Organization</td><td class="value">{{ shodan.org }}</td></tr>{% endif %}
+  {% if shodan.os %}<tr><td class="label">OS</td><td class="value">{{ shodan.os }}</td></tr>{% endif %}
+  {% if shodan.ports %}<tr><td class="label">Open ports</td><td class="value">{{ shodan.ports|join(', ') }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+{% set breaches = results.get('breaches') %}
+{% if breaches and breaches.get('breaches') %}
+<h2>Email breaches ({{ breaches.breaches|length }})</h2>
+<table><tr><th>Source</th><th>Date</th></tr>
+{% for b in breaches.breaches %}<tr><td>{{ b.Name or b.name or b }}</td><td>{{ b.BreachDate or b.date or '' }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+{% set phone = results.get('phone') %}
+{% if phone %}
+<h2>Phone</h2>
+<table>
+  <tr><td class="label">Valid</td><td class="value">{{ phone.valid }}</td></tr>
+  {% if phone.country_name %}<tr><td class="label">Country</td><td class="value">{{ phone.country_name }}</td></tr>{% endif %}
+  {% if phone.carrier %}<tr><td class="label">Carrier</td><td class="value">{{ phone.carrier }}</td></tr>{% endif %}
+  {% if phone.line_type %}<tr><td class="label">Line type</td><td class="value">{{ phone.line_type }}</td></tr>{% endif %}
+  {% if phone.region %}<tr><td class="label">Region</td><td class="value">{{ phone.region }}</td></tr>{% endif %}
+</table>
+{% endif %}
+
+<div class="footer">
+  Generated by PRISM OSINT Toolkit · {{ generated_at }}
+</div>
+</body>
+</html>
+"""
+
+
 def generate_pdf_report(
     target: str,
     scan_type: str,
@@ -554,22 +759,21 @@ def generate_pdf_report(
     opsec: Optional[Dict[str, Any]] = None,
     output_path: Optional[str] = None,
 ) -> str:
-    """Generate a PDF version of the scan report using WeasyPrint.
+    """Generate a PDF version of the scan report using xhtml2pdf (pure Python).
 
-    WeasyPrint does not execute JavaScript, so the interactive Leaflet map
-    is omitted. All other report data (OPSEC score, findings, WHOIS, DNS,
-    threat intel, etc.) is preserved.
+    Uses a dedicated PDF-friendly template (no JS, no flexbox, no web fonts)
+    so it works reliably on Windows/Linux/macOS without system libraries.
     """
     try:
-        from weasyprint import HTML
+        from xhtml2pdf import pisa
     except ImportError as e:
         raise ImportError(
-            "weasyprint is required for PDF export. Install with: pip install weasyprint"
+            "xhtml2pdf is required for PDF export. Install with: pip install xhtml2pdf"
         ) from e
 
     env = Environment(loader=BaseLoader(), autoescape=True)
     env.filters["tojson"] = lambda v: json.dumps(v)
-    template = env.from_string(REPORT_TEMPLATE)
+    template = env.from_string(PDF_REPORT_TEMPLATE)
 
     context = {
         "target": target,
@@ -583,11 +787,6 @@ def generate_pdf_report(
     }
 
     html = template.render(**context)
-    # Strip Leaflet JS/CSS that WeasyPrint cannot render
-    html = re.sub(r'<link[^>]*leaflet[^>]*>', '', html, flags=re.IGNORECASE)
-    html = re.sub(r'<script[^>]*leaflet[^>]*></script>', '', html, flags=re.IGNORECASE)
-    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
-    html = re.sub(r'<div id="report-map"[^>]*></div>', '', html)
 
     if output_path is None:
         results_dir = os.path.join(os.path.dirname(__file__), "..", "results")
@@ -596,5 +795,9 @@ def generate_pdf_report(
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(results_dir, f"report_{safe_target}_{ts}.pdf")
 
-    HTML(string=html).write_pdf(output_path)
+    with open(output_path, "wb") as out_f:
+        result = pisa.CreatePDF(src=html, dest=out_f, encoding="utf-8")
+    if result.err:
+        raise RuntimeError(f"xhtml2pdf failed with {result.err} error(s)")
+
     return output_path
