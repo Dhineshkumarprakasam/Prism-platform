@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libssl-dev \
     libffi-dev \
+    libcairo2-dev \
+    pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-web.txt .
