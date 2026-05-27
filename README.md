@@ -3,7 +3,7 @@
 > Self-hosted OSINT platform with **22+ modules**, **OPSEC scoring**, **AI summary**, and a real-time web dashboard.
 > Scan any domain, IP, email, phone, or username — get WHOIS, DNS, threat intel, breach data, username search, dark-web mirrors, OPSEC score, entity graphs, and HTML/PDF reports in seconds.
 
-**[▶ Live Demo](https://getprism.su)** · **[🐳 Docker Quick Start](#docker-recommended)** · **[📖 Architecture](docs/ARCHITECTURE.md)** · **[🔒 Security](SECURITY.md)** · **[📝 Changelog](CHANGELOG.md)**
+**[Live Demo](https://getprism.su)** · **[Docker Quick Start](#docker-recommended)** · **[Architecture](docs/ARCHITECTURE.md)** · **[Security](SECURITY.md)** · **[Changelog](CHANGELOG.md)**
 
 [![CI](https://github.com/NovaCode37/Prism-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/NovaCode37/Prism-platform/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-2.2.0-7c5cfc?style=flat-square)](CHANGELOG.md)
@@ -148,7 +148,7 @@ flowchart LR
 </p>
 
 <details>
-<summary><b>📸 More screenshots (domain · IP · email · phone · username · standalone tools)</b></summary>
+<summary><b>More screenshots (domain / IP / email / phone / username / standalone tools)</b></summary>
 
 ### Domain Scan
 WHOIS, DNS, threats, Wayback, GeoIP map, entity graph.
@@ -361,7 +361,7 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`):
 
 ## Roadmap
 
-### v2.2 — released 🎉
+### v2.2 — released
 - [x] Multilingual report rendering (EN / RU / DE) via `report_i18n`
 - [x] Webhook callbacks with HMAC signing + SSRF guard
 - [x] Multi-marker Leaflet GeoIP map (replaces single-iframe map)
@@ -386,8 +386,12 @@ GitHub Actions pipeline (`.github/workflows/ci.yml`):
 
 ## Star History
 
-<a href="https://www.star-history.com/#NovaCode37/Prism-platform&Date">
-  <img src="https://api.star-history.com/svg?repos=NovaCode37/Prism-platform&type=Date" alt="Star History Chart" width="640" />
+<a href="https://star-history.com/#NovaCode37/Prism-platform&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=NovaCode37/Prism-platform&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=NovaCode37/Prism-platform&type=Date" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=NovaCode37/Prism-platform&type=Date" width="640" />
+  </picture>
 </a>
 
 ---
